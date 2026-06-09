@@ -1,0 +1,317 @@
+:root {
+  font-family: "Microsoft YaHei", "Segoe UI", Arial, sans-serif;
+  color: #1f2933;
+  background: #eef2f5;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+.app-shell {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  min-height: 100vh;
+}
+
+.sidebar {
+  background: #17324d;
+  color: #fff;
+  padding: 28px 18px;
+}
+
+.sidebar h1 {
+  margin: 6px 0 28px;
+  font-size: 24px;
+}
+
+.eyebrow {
+  margin: 0;
+  color: #6b879f;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.sidebar .eyebrow {
+  color: #9fb3c8;
+}
+
+.nav {
+  display: grid;
+  gap: 8px;
+}
+
+.nav button,
+.primary,
+.ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  border: 0;
+  border-radius: 6px;
+  padding: 0 14px;
+}
+
+.nav button {
+  justify-content: flex-start;
+  background: transparent;
+  color: #d9e2ec;
+}
+
+.nav button.active,
+.nav button:hover {
+  background: #274b6d;
+  color: #fff;
+}
+
+.content {
+  padding: 28px;
+}
+
+.view {
+  display: grid;
+  gap: 20px;
+}
+
+.view-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.view-header h2 {
+  margin: 4px 0 0;
+  font-size: 28px;
+}
+
+.primary {
+  background: #0f766e;
+  color: #fff;
+}
+
+.ghost {
+  background: #edf2f7;
+  color: #243b53;
+}
+
+.danger {
+  color: #b42318;
+}
+
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.metric,
+.panel {
+  background: #fff;
+  border: 1px solid #d9e2ec;
+  border-radius: 8px;
+}
+
+.metric {
+  padding: 18px;
+}
+
+.metric p {
+  margin: 0 0 10px;
+  color: #52616b;
+}
+
+.metric strong {
+  font-size: 28px;
+}
+
+.panel {
+  padding: 20px;
+}
+
+.panel h3 {
+  margin: 0 0 16px;
+  font-size: 18px;
+}
+
+.rule-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.rule-grid div {
+  border: 1px solid #d9e2ec;
+  border-radius: 6px;
+  padding: 14px;
+}
+
+.rule-grid span,
+small {
+  color: #627d98;
+}
+
+.rule-grid strong {
+  display: block;
+  margin-top: 8px;
+}
+
+.split {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+.form {
+  display: grid;
+  gap: 14px;
+}
+
+label {
+  display: grid;
+  gap: 6px;
+  color: #334e68;
+  font-size: 14px;
+}
+
+input,
+select {
+  width: 100%;
+  min-height: 40px;
+  border: 1px solid #bcccdc;
+  border-radius: 6px;
+  padding: 8px 10px;
+  background: #fff;
+  color: #1f2933;
+}
+
+.message {
+  margin: 0;
+  color: #0f766e;
+  word-break: break-word;
+}
+
+.list-panel {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  border-bottom: 1px solid #e4e7eb;
+  padding: 12px 10px;
+  text-align: left;
+  vertical-align: middle;
+}
+
+th {
+  color: #52616b;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  border-radius: 999px;
+  padding: 0 10px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.badge.booked {
+  background: #d1fae5;
+  color: #047857;
+}
+
+.badge.cancelled {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.badge.completed {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.empty-state {
+  border: 1px dashed #bcccdc;
+  border-radius: 6px;
+  padding: 28px;
+  color: #627d98;
+  text-align: center;
+}
+
+@media (max-width: 980px) {
+  .app-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    padding: 18px;
+  }
+
+  .sidebar h1 {
+    margin-bottom: 14px;
+  }
+
+  .nav {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  .nav button {
+    justify-content: center;
+    padding: 0 8px;
+  }
+
+  .metrics,
+  .rule-grid,
+  .split {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .content {
+    padding: 18px;
+  }
+
+  .nav {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .view-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

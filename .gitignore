@@ -1,0 +1,41 @@
+__pycache__/
+*.pyc
+.venv/
+node_modules/
+dist/
+.env
+npm-debug.log*
+
+# Added by batch GitHub push script
+# Dependencies
+vendor/
+# Python
+*.py[cod]
+*.class
+.Python
+venv/
+env/
+# Environment files
+.env.*
+!.env.example
+# Build outputs
+dist-ssr/
+build/
+.next/
+.nuxt/
+coverage/
+# Logs
+*.log
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+# OS and editor files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+# Local caches
+.cache/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
