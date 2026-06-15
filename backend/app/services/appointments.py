@@ -74,6 +74,7 @@ def create_appointment(payload: AppointmentCreate) -> AppointmentRead:
         created_at=datetime.now(),
     )
     appointments[appointment.id] = appointment
+    students[payload.student_id].remaining_hours -= int(duration_hours) if duration_hours == int(duration_hours) else duration_hours
     return appointment_to_read(appointment)
 
 
@@ -89,18 +90,23 @@ def cancel_appointment(appointment_id: int, reason: str) -> AppointmentRead:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Appointment not found")
     if appointment.status == AppointmentStatus.cancelled:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Appointment already cancelled")
-    if appointment.status == AppointmentStatus.completed and not cancel_rule.allow_cancel_completed:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Completed appointments cannot be cancelled")
-
-    hours_before_start = (appointment.start_time - datetime.now()).total_seconds() / 3600
-    if hours_before_start < cancel_rule.min_hours_before_start:
-        raise HTTPException(
-            status.HTTP_400_BAD_REQUEST,
-            f"Appointments must be cancelled at least {cancel_rule.min_hours_before_start} hours in advance",
-        )
+    if appointment.status == AppointmentStatus.completed:
+        if not cancel_rule.allow_cancel_completed:
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, "Completed appointments cannot be cancelled")
+    else:
+        hours_before_start = (appointment.start_time - datetime.now()).total_seconds() / 3600
+        if hours_before_start < cancel_rule.min_hours_before_start:
+            raise HTTPException(
+                status.HTTP_400_BAD_REQUEST,
+                f"Appointments must be cancelled at least {cancel_rule.min_hours_before_start} hours in advance",
+            )
 
     appointment.status = AppointmentStatus.cancelled
     appointment.cancelled_at = datetime.now()
     appointment.cancel_reason = reason
     appointments[appointment.id] = appointment
+
+    duration_hours = (appointment.end_time - appointment.start_time).total_seconds() / 3600
+    students[appointment.student_id].remaining_hours += int(duration_hours) if duration_hours == int(duration_hours) else duration_hours
+
     return appointment_to_read(appointment)
