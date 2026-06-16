@@ -13,7 +13,7 @@ class Student(BaseModel):
     id: int
     name: str
     phone: str
-    remaining_hours: int = Field(ge=0)
+    remaining_hours: float = Field(ge=0)
 
 
 class Coach(BaseModel):

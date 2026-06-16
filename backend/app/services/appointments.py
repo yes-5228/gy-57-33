@@ -51,15 +51,25 @@ def create_appointment(payload: AppointmentCreate) -> AppointmentRead:
     if active_count >= cancel_rule.max_active_bookings_per_student:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Student has reached active booking limit")
 
-    has_conflict = any(
+    has_coach_conflict = any(
         item.status == AppointmentStatus.booked
         and item.coach_id == payload.coach_id
         and start_time < item.end_time
         and end_time > item.start_time
         for item in appointments.values()
     )
-    if has_conflict:
+    if has_coach_conflict:
         raise HTTPException(status.HTTP_409_CONFLICT, "Coach already has a booking in this time slot")
+
+    has_student_conflict = any(
+        item.status == AppointmentStatus.booked
+        and item.student_id == payload.student_id
+        and start_time < item.end_time
+        and end_time > item.start_time
+        for item in appointments.values()
+    )
+    if has_student_conflict:
+        raise HTTPException(status.HTTP_409_CONFLICT, "Student already has a booking in this time slot")
 
     duration_hours = (end_time - start_time).total_seconds() / 3600
     if students[payload.student_id].remaining_hours < duration_hours:
@@ -74,7 +84,7 @@ def create_appointment(payload: AppointmentCreate) -> AppointmentRead:
         created_at=datetime.now(),
     )
     appointments[appointment.id] = appointment
-    students[payload.student_id].remaining_hours -= int(duration_hours) if duration_hours == int(duration_hours) else duration_hours
+    students[payload.student_id].remaining_hours -= duration_hours
     return appointment_to_read(appointment)
 
 
@@ -107,6 +117,6 @@ def cancel_appointment(appointment_id: int, reason: str) -> AppointmentRead:
     appointments[appointment.id] = appointment
 
     duration_hours = (appointment.end_time - appointment.start_time).total_seconds() / 3600
-    students[appointment.student_id].remaining_hours += int(duration_hours) if duration_hours == int(duration_hours) else duration_hours
+    students[appointment.student_id].remaining_hours += duration_hours
 
     return appointment_to_read(appointment)

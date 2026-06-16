@@ -2,7 +2,8 @@ from datetime import timedelta
 
 import pytest
 
-from app.models import AppointmentStatus
+from app.models import AppointmentStatus, Student
+from app.store import next_id, students
 
 
 class TestAppointmentConflict:
@@ -91,11 +92,16 @@ class TestAppointmentConflict:
         response = client.post("/api/appointments", json=payload)
         assert response.status_code == 201
 
-    def test_no_conflict_different_coach(self, client, test_student, test_coach, test_coach2, future_slot, create_booking):
-        create_booking(test_student.id, test_coach.id, future_slot)
+    def test_no_conflict_different_coach(self, client, test_coach, test_coach2, future_slot, create_booking):
+        s1 = Student(id=next_id("student"), name="学员1", phone="13800000901", remaining_hours=10)
+        s2 = Student(id=next_id("student"), name="学员2", phone="13800000902", remaining_hours=10)
+        students[s1.id] = s1
+        students[s2.id] = s2
+
+        create_booking(s1.id, test_coach.id, future_slot)
 
         payload = {
-            "student_id": test_student.id,
+            "student_id": s2.id,
             "coach_id": test_coach2.id,
             "start_time": future_slot.isoformat(),
             "end_time": (future_slot + timedelta(hours=2)).isoformat(),

@@ -7,7 +7,7 @@ from app.models import AppointmentStatus
 class StudentCreate(BaseModel):
     name: str = Field(min_length=2, max_length=30)
     phone: str = Field(min_length=7, max_length=20)
-    remaining_hours: int = Field(default=20, ge=0, le=200)
+    remaining_hours: float = Field(default=20, ge=0, le=200)
 
 
 class StudentRead(StudentCreate):
@@ -65,7 +65,7 @@ class LessonStats(BaseModel):
     completed_hours: float
     booked_hours: float
     cancelled_count: int
-    remaining_hours: int
+    remaining_hours: float
 
 
 class DashboardSummary(BaseModel):
