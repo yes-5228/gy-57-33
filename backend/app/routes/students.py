@@ -14,6 +14,9 @@ def list_students() -> list[Student]:
 
 @router.post("", response_model=StudentRead, status_code=201)
 def create_student(payload: StudentCreate) -> Student:
-    student = Student(id=next_id("student"), **payload.model_dump())
+    data = payload.model_dump()
+    data["initial_hours"] = round(payload.remaining_hours, 1)
+    data["remaining_hours"] = round(payload.remaining_hours, 1)
+    student = Student(id=next_id("student"), **data)
     students[student.id] = student
     return student

@@ -27,14 +27,14 @@ def reset_store():
 
 @pytest.fixture
 def test_student():
-    s = Student(id=next_id("student"), name="测试学员", phone="13800000001", remaining_hours=10)
+    s = Student(id=next_id("student"), name="测试学员", phone="13800000001", remaining_hours=10, initial_hours=10)
     students[s.id] = s
     return s
 
 
 @pytest.fixture
 def test_student_low_hours():
-    s = Student(id=next_id("student"), name="课时不足学员", phone="13800000002", remaining_hours=1)
+    s = Student(id=next_id("student"), name="课时不足学员", phone="13800000002", remaining_hours=1, initial_hours=1)
     students[s.id] = s
     return s
 

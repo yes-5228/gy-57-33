@@ -71,7 +71,9 @@ def create_appointment(payload: AppointmentCreate) -> AppointmentRead:
     if has_student_conflict:
         raise HTTPException(status.HTTP_409_CONFLICT, "Student already has a booking in this time slot")
 
-    duration_hours = (end_time - start_time).total_seconds() / 3600
+    duration_hours = round((end_time - start_time).total_seconds() / 3600, 1)
+    if duration_hours <= 0:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Appointment duration must be positive")
     if students[payload.student_id].remaining_hours < duration_hours:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Student does not have enough remaining hours")
 
@@ -84,7 +86,9 @@ def create_appointment(payload: AppointmentCreate) -> AppointmentRead:
         created_at=datetime.now(),
     )
     appointments[appointment.id] = appointment
-    students[payload.student_id].remaining_hours -= duration_hours
+    students[payload.student_id].remaining_hours = round(
+        students[payload.student_id].remaining_hours - duration_hours, 1
+    )
     return appointment_to_read(appointment)
 
 
@@ -116,7 +120,11 @@ def cancel_appointment(appointment_id: int, reason: str) -> AppointmentRead:
     appointment.cancel_reason = reason
     appointments[appointment.id] = appointment
 
-    duration_hours = (appointment.end_time - appointment.start_time).total_seconds() / 3600
-    students[appointment.student_id].remaining_hours += duration_hours
+    duration_hours = round((appointment.end_time - appointment.start_time).total_seconds() / 3600, 1)
+    student = students[appointment.student_id]
+    new_remaining = round(student.remaining_hours + duration_hours, 1)
+    if new_remaining > student.initial_hours:
+        new_remaining = student.initial_hours
+    student.remaining_hours = new_remaining
 
     return appointment_to_read(appointment)

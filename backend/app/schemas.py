@@ -12,6 +12,7 @@ class StudentCreate(BaseModel):
 
 class StudentRead(StudentCreate):
     id: int
+    initial_hours: float
 
 
 class CoachCreate(BaseModel):

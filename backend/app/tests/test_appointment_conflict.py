@@ -93,8 +93,8 @@ class TestAppointmentConflict:
         assert response.status_code == 201
 
     def test_no_conflict_different_coach(self, client, test_coach, test_coach2, future_slot, create_booking):
-        s1 = Student(id=next_id("student"), name="学员1", phone="13800000901", remaining_hours=10)
-        s2 = Student(id=next_id("student"), name="学员2", phone="13800000902", remaining_hours=10)
+        s1 = Student(id=next_id("student"), name="学员1", phone="13800000901", remaining_hours=10, initial_hours=10)
+        s2 = Student(id=next_id("student"), name="学员2", phone="13800000902", remaining_hours=10, initial_hours=10)
         students[s1.id] = s1
         students[s2.id] = s2
 

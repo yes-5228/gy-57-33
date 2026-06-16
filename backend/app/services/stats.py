@@ -29,7 +29,7 @@ def lesson_stats() -> list[LessonStats]:
                 completed_hours=round(completed_hours, 1),
                 booked_hours=round(booked_hours, 1),
                 cancelled_count=cancelled_count,
-                remaining_hours=student.remaining_hours,
+                remaining_hours=round(student.remaining_hours, 1),
             )
         )
     return result

@@ -14,6 +14,7 @@ class Student(BaseModel):
     name: str
     phone: str
     remaining_hours: float = Field(ge=0)
+    initial_hours: float = Field(ge=0)
 
 
 class Coach(BaseModel):

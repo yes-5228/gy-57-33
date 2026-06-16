@@ -32,7 +32,7 @@ class TestHoursRefundOnCancellation:
         assert student_after_cancel["remaining_hours"] == original_hours
 
     def test_cancel_refund_fractional_hours(self, client, test_coach, future_slot):
-        s = Student(id=next_id("student"), name="小数课时学员", phone="13800000501", remaining_hours=10)
+        s = Student(id=next_id("student"), name="小数课时学员", phone="13800000501", remaining_hours=10, initial_hours=10)
         students[s.id] = s
         original_hours = s.remaining_hours
 
@@ -91,10 +91,10 @@ class TestHoursRefundOnCancellation:
 
     def test_cancel_completed_refund_when_allowed(self, client, test_student, test_coach, create_booking):
         cancel_rule.allow_cancel_completed = True
-        original_hours = test_student.remaining_hours
 
         past = datetime.now() - timedelta(days=2)
         appt = create_booking(test_student.id, test_coach.id, past, hours=2, status=AppointmentStatus.completed)
+        test_student.remaining_hours = round(test_student.remaining_hours - 2, 1)
 
         before_stats = client.get("/api/dashboard/lesson-stats").json()
         before_hours = next(s for s in before_stats if s["student_id"] == test_student.id)["remaining_hours"]
@@ -104,10 +104,10 @@ class TestHoursRefundOnCancellation:
 
         after_stats = client.get("/api/dashboard/lesson-stats").json()
         after_hours = next(s for s in after_stats if s["student_id"] == test_student.id)["remaining_hours"]
-        assert after_hours == before_hours + 2
+        assert after_hours == round(before_hours + 2, 1)
 
     def test_cancel_then_rebook_uses_refunded_hours(self, client, test_coach, future_slot):
-        s = Student(id=next_id("student"), name="重复预约学员", phone="13800000502", remaining_hours=2)
+        s = Student(id=next_id("student"), name="重复预约学员", phone="13800000502", remaining_hours=2, initial_hours=2)
         students[s.id] = s
 
         payload1 = {
@@ -312,8 +312,8 @@ class TestStudentTimeConflict:
         assert response.status_code == 409
 
     def test_different_students_same_time_no_conflict(self, client, test_coach, test_coach2, future_slot):
-        s1 = Student(id=next_id("student"), name="学员甲", phone="13800000601", remaining_hours=10)
-        s2 = Student(id=next_id("student"), name="学员乙", phone="13800000602", remaining_hours=10)
+        s1 = Student(id=next_id("student"), name="学员甲", phone="13800000601", remaining_hours=10, initial_hours=10)
+        s2 = Student(id=next_id("student"), name="学员乙", phone="13800000602", remaining_hours=10, initial_hours=10)
         students[s1.id] = s1
         students[s2.id] = s2
 
@@ -334,3 +334,145 @@ class TestStudentTimeConflict:
         }
         response2 = client.post("/api/appointments", json=payload2)
         assert response2.status_code == 201
+
+
+class TestHoursPrecisionAndSafety:
+    def test_booking_hours_rounded_to_one_decimal(self, client, test_coach, future_slot):
+        cancel_rule.min_hours_before_start = -100
+        s = Student(id=next_id("student"), name="精度测试1", phone="13800000701", remaining_hours=10.0, initial_hours=10.0)
+        students[s.id] = s
+
+        payload = {
+            "student_id": s.id,
+            "coach_id": test_coach.id,
+            "start_time": future_slot.isoformat(),
+            "end_time": (future_slot + timedelta(hours=0, minutes=36)).isoformat(),
+        }
+        response = client.post("/api/appointments", json=payload)
+        assert response.status_code == 201
+        appt_id = response.json()["id"]
+
+        stats = client.get("/api/dashboard/lesson-stats").json()
+        hours = next(x for x in stats if x["student_id"] == s.id)["remaining_hours"]
+        assert hours == 9.4
+
+        cancel_resp = client.post(f"/api/appointments/{appt_id}/cancel", json={"reason": "OK"})
+        assert cancel_resp.status_code == 200
+        after_cancel = client.get("/api/dashboard/lesson-stats").json()
+        final_hours = next(x for x in after_cancel if x["student_id"] == s.id)["remaining_hours"]
+        assert final_hours == 10.0
+
+    def test_cancel_cannot_exceed_initial_hours(self, client, test_student, test_coach, create_booking):
+        cancel_rule.allow_cancel_completed = True
+        past = datetime.now() - timedelta(days=1)
+        appt = create_booking(test_student.id, test_coach.id, past, hours=3, status=AppointmentStatus.completed)
+
+        response = client.post(f"/api/appointments/{appt.id}/cancel", json={"reason": "超额退款测试"})
+        assert response.status_code == 200
+
+        stats = client.get("/api/dashboard/lesson-stats").json()
+        final = next(x for x in stats if x["student_id"] == test_student.id)["remaining_hours"]
+        assert final <= test_student.initial_hours
+        assert final == test_student.initial_hours
+
+    def test_multiple_book_and_cancel_monotonic(self, client, test_student, test_coach, future_slot):
+        cancel_rule.max_active_bookings_per_student = 10
+        initial = test_student.remaining_hours
+
+        for i in range(5):
+            payload = {
+                "student_id": test_student.id,
+                "coach_id": test_coach.id,
+                "start_time": (future_slot + timedelta(hours=i * 3)).isoformat(),
+                "end_time": (future_slot + timedelta(hours=i * 3 + 1, minutes=12)).isoformat(),
+            }
+            book = client.post("/api/appointments", json=payload)
+            assert book.status_code == 201
+            appt_id = book.json()["id"]
+            client.post(f"/api/appointments/{appt_id}/cancel", json={"reason": f"取消{i}"})
+
+        stats = client.get("/api/dashboard/lesson-stats").json()
+        final = next(x for x in stats if x["student_id"] == test_student.id)["remaining_hours"]
+        assert final == initial
+        assert final == test_student.initial_hours
+
+    def test_cancel_completed_not_more_than_initial(self, client, test_coach, create_booking):
+        cancel_rule.allow_cancel_completed = True
+        s = Student(id=next_id("student"), name="边界测试1", phone="13800000702", remaining_hours=5, initial_hours=10)
+        students[s.id] = s
+
+        for i in range(3):
+            past = datetime.now() - timedelta(days=i + 1)
+            appt = create_booking(s.id, test_coach.id, past, hours=2, status=AppointmentStatus.completed)
+            client.post(f"/api/appointments/{appt.id}/cancel", json={"reason": f"取消{i}"})
+
+        stats = client.get("/api/dashboard/lesson-stats").json()
+        final = next(x for x in stats if x["student_id"] == s.id)["remaining_hours"]
+        assert final == s.initial_hours
+
+    def test_display_matches_storage_exactly(self, client, test_student, test_coach, future_slot):
+        for i in range(3):
+            payload = {
+                "student_id": test_student.id,
+                "coach_id": test_coach.id,
+                "start_time": (future_slot + timedelta(hours=i * 2 + i)).isoformat(),
+                "end_time": (future_slot + timedelta(hours=i * 2 + i + 1, minutes=18)).isoformat(),
+            }
+            response = client.post("/api/appointments", json=payload)
+            assert response.status_code == 201
+
+        stats = client.get("/api/dashboard/lesson-stats").json()
+        display_value = next(x for x in stats if x["student_id"] == test_student.id)["remaining_hours"]
+        storage_value = round(test_student.remaining_hours, 1)
+        assert display_value == storage_value
+        assert display_value == round(display_value, 1)
+
+    def test_never_exceeds_initial_after_any_operation(self, client, test_coach, future_slot):
+        cancel_rule.max_active_bookings_per_student = 20
+        s = Student(id=next_id("student"), name="综合边界", phone="13800000703", remaining_hours=15.0, initial_hours=15.0)
+        students[s.id] = s
+
+        booked_ids = []
+        for i in range(6):
+            payload = {
+                "student_id": s.id,
+                "coach_id": test_coach.id,
+                "start_time": (future_slot + timedelta(hours=i * 2)).isoformat(),
+                "end_time": (future_slot + timedelta(hours=i * 2 + 1, minutes=36)).isoformat(),
+            }
+            r = client.post("/api/appointments", json=payload)
+            assert r.status_code == 201
+            booked_ids.append(r.json()["id"])
+
+        for aid in booked_ids[::2]:
+            client.post(f"/api/appointments/{aid}/cancel", json={"reason": "取消"})
+
+        stats = client.get("/api/dashboard/lesson-stats").json()
+        final = next(x for x in stats if x["student_id"] == s.id)["remaining_hours"]
+        assert final <= s.initial_hours
+
+    def test_decimal_precision_cancellation(self, client, test_coach, future_slot):
+        s = Student(id=next_id("student"), name="小数取消", phone="13800000704", remaining_hours=20, initial_hours=20)
+        students[s.id] = s
+
+        payload = {
+            "student_id": s.id,
+            "coach_id": test_coach.id,
+            "start_time": future_slot.isoformat(),
+            "end_time": (future_slot + timedelta(hours=2, minutes=24)).isoformat(),
+        }
+        book = client.post("/api/appointments", json=payload)
+        assert book.status_code == 201
+        appt_id = book.json()["id"]
+
+        after_book = client.get("/api/dashboard/lesson-stats").json()
+        after_book_hours = next(x for x in after_book if x["student_id"] == s.id)["remaining_hours"]
+        assert after_book_hours == 17.6
+
+        cancel = client.post(f"/api/appointments/{appt_id}/cancel", json={"reason": "小数取消"})
+        assert cancel.status_code == 200
+
+        after_cancel = client.get("/api/dashboard/lesson-stats").json()
+        after_cancel_hours = next(x for x in after_cancel if x["student_id"] == s.id)["remaining_hours"]
+        assert after_cancel_hours == 20.0
+        assert after_cancel_hours == s.initial_hours

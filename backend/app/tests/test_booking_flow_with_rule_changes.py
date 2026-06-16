@@ -8,7 +8,7 @@ from app.store import cancel_rule, next_id, students
 
 class TestBookingFlowWithRuleChanges:
     def test_full_booking_flow_before_and_after_rule_change(self, client, test_coach):
-        s1 = Student(id=next_id("student"), name="流程测试学员", phone="13800000401", remaining_hours=20)
+        s1 = Student(id=next_id("student"), name="流程测试学员", phone="13800000401", remaining_hours=20, initial_hours=20)
         students[s1.id] = s1
 
         future1 = datetime.now().replace(minute=0, second=0, microsecond=0) + timedelta(days=1, hours=10)
@@ -143,7 +143,7 @@ class TestBookingFlowWithRuleChanges:
         cancel_rule.min_hours_before_start = 1
         cancel_rule.max_active_bookings_per_student = 10
 
-        s = Student(id=next_id("student"), name="规则后课时测试", phone="13800000402", remaining_hours=1)
+        s = Student(id=next_id("student"), name="规则后课时测试", phone="13800000402", remaining_hours=1, initial_hours=1)
         students[s.id] = s
 
         payload = {

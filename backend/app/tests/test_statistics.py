@@ -45,9 +45,9 @@ class TestDashboardSummary:
         assert data["cancel_rule"]["allow_cancel_completed"] is True
 
     def test_summary_multiple_students_coaches(self, client, test_coach, test_coach2, future_slot, create_booking):
-        s1 = Student(id=next_id("student"), name="学员1", phone="13800000201", remaining_hours=10)
-        s2 = Student(id=next_id("student"), name="学员2", phone="13800000202", remaining_hours=15)
-        s3 = Student(id=next_id("student"), name="学员3", phone="13800000203", remaining_hours=5)
+        s1 = Student(id=next_id("student"), name="学员1", phone="13800000201", remaining_hours=10, initial_hours=10)
+        s2 = Student(id=next_id("student"), name="学员2", phone="13800000202", remaining_hours=15, initial_hours=15)
+        s3 = Student(id=next_id("student"), name="学员3", phone="13800000203", remaining_hours=5, initial_hours=5)
         students[s1.id] = s1
         students[s2.id] = s2
         students[s3.id] = s3
@@ -119,8 +119,8 @@ class TestLessonStats:
         assert data[0]["cancelled_count"] == 1
 
     def test_lesson_stats_multiple_students(self, client, test_coach, future_slot, create_booking):
-        s1 = Student(id=next_id("student"), name="学员A", phone="13800000301", remaining_hours=20)
-        s2 = Student(id=next_id("student"), name="学员B", phone="13800000302", remaining_hours=10)
+        s1 = Student(id=next_id("student"), name="学员A", phone="13800000301", remaining_hours=20, initial_hours=20)
+        s2 = Student(id=next_id("student"), name="学员B", phone="13800000302", remaining_hours=10, initial_hours=10)
         students[s1.id] = s1
         students[s2.id] = s2
 
